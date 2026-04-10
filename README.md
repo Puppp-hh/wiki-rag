@@ -21,15 +21,16 @@ A lightweight local RAG (Retrieval-Augmented Generation) system built with:
 ## 🏗 Project Structure
 
 wiki-rag/
-├── raw/          # original notes
-├── wiki/         # generated notes
-├── index.json    # embeddings
-├── compiler.py   # raw → wiki
-├── embedding.py  # embedding logic
-├── index.py      # build index
-├── query.py      # search + answer
-├── llm.py        # LLM request wrapper
-├── utils.py
+├── main.py          # CLI 入口（argparse 子命令）
+├── utils.py         # 路径常量、日志、cosine_sim
+├── llm.py           # Ollama chat 封装（LLMError）
+├── embedding.py     # Ollama embedding + 磁盘缓存（EmbeddingError）
+├── compiler.py      # raw/ → wiki/（用 llm）
+├── index.py         # wiki/ → index.json（用 embedding）
+├── query.py         # 检索 + 生成
+├── raw/  wiki/  index.json   # 原有数据
+└── .embedding_cache.json     # 新增：embedding 缓存（自动生成）
+
 ---
 
 ## ⚙️ Setup

@@ -1,11 +1,17 @@
-"""检索 + 生成：读取 index.json → 相似度召回 → LLM 回答。"""
+"""检索 + 生成：读取 index.json → 相似度召回 → LLM 回答 → refine。
+
+对外暴露两个函数：
+    - answer_question(...) -> str   返回最终答案字符串（供 chat / Streamlit 使用）
+    - query(...) -> None            CLI 风格，直接打印
+"""
 from __future__ import annotations
 
 import json
-from typing import List
+from typing import List, Tuple
 
 from embedding import EmbeddingError, embed
 from llm import LLMError, ask
+from refine import refine_answer
 from utils import INDEX_FILE, cosine_sim, log
 
 _PROMPT = """基于以下内容回答问题：
@@ -28,38 +34,60 @@ def _load_index() -> List[dict]:
         raise RuntimeError(f"索引文件损坏，无法解析: {e}") from e
 
 
-def query(question: str, top_k: int = 3) -> None:
-    try:
-        chunks = _load_index()
-    except (FileNotFoundError, RuntimeError) as e:
-        log.error(str(e))
-        return
-
+def _retrieve(question: str, top_k: int) -> Tuple[List[Tuple[float, dict]], List[dict]]:
+    """召回 top-k 段落。返回 (打分后的 top-k, 全部 chunks)。"""
+    chunks = _load_index()
     if not chunks:
-        log.warning("索引为空，先执行 compile + index")
-        return
+        raise RuntimeError("索引为空，先执行 compile + index")
 
-    log.info("计算问题 embedding...")
-    try:
-        q_emb = embed(question)
-    except EmbeddingError as e:
-        log.error(f"embedding 失败: {e}")
-        return
-
+    q_emb = embed(question)
     scored = [(cosine_sim(q_emb, c["embedding"]), c) for c in chunks]
     scored.sort(key=lambda x: x[0], reverse=True)
-    top = scored[:top_k]
+    return scored[:top_k], chunks
 
-    print("\n--- 匹配段落 ---")
+
+def answer_question(
+    question: str,
+    top_k: int = 3,
+    refine: bool = True,
+) -> str:
+    """完整问答流水线，返回最终答案字符串。
+
+    任何阶段失败都会抛出对应异常，由调用方处理。
+    """
+    log.info("计算问题 embedding...")
+    top, _ = _retrieve(question, top_k)
+
     for score, chunk in top:
         preview = chunk["text"][:50].replace("\n", " ")
-        print(f"  {score:.4f} | [{chunk.get('source', '?')}] {preview}")
+        log.info(f"  hit {score:.4f} | [{chunk.get('source', '?')}] {preview}")
 
     context = "\n\n".join(c["text"] for _, c in top)
     prompt = _PROMPT.format(context=context, question=question)
 
+    log.info("生成初始回答...")
+    initial = ask(prompt)
+
+    if not refine:
+        return initial
+
     try:
-        answer = ask(prompt)
+        return refine_answer(question, initial)
+    except LLMError as e:
+        log.warning(f"refine 失败，回退到原始回答: {e}")
+        return initial
+
+
+def query(question: str, top_k: int = 3, refine: bool = True) -> None:
+    """CLI 入口：捕获异常，打印结果。"""
+    try:
+        answer = answer_question(question, top_k=top_k, refine=refine)
+    except (FileNotFoundError, RuntimeError) as e:
+        log.error(str(e))
+        return
+    except EmbeddingError as e:
+        log.error(f"embedding 失败: {e}")
+        return
     except LLMError as e:
         log.error(f"LLM 调用失败: {e}")
         return

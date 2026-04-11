@@ -1,4 +1,7 @@
-"""公共工具：配置常量、日志、相似度计算。"""
+"""公共工具：路径常量、日志、相似度计算。
+
+所有项目内的目录都以这里的常量为准，不要在别处再 hardcode 路径。
+"""
 from __future__ import annotations
 
 import logging
@@ -7,11 +10,16 @@ from pathlib import Path
 import numpy as np
 
 # ---------- 路径 ----------
-ROOT = Path(__file__).resolve().parent
-RAW_DIR = ROOT / "raw"
-WIKI_DIR = ROOT / "wiki"
-INDEX_FILE = ROOT / "index.json"
-EMBED_CACHE_FILE = ROOT / ".embedding_cache.json"
+# core/utils.py → 项目根：再上跳两级
+ROOT = Path(__file__).resolve().parent.parent
+
+DATA_DIR = ROOT / "data"
+RAW_DIR = DATA_DIR / "raw"
+WIKI_DIR = DATA_DIR / "wiki"
+INDEX_FILE = DATA_DIR / "index.json"
+
+CACHE_DIR = ROOT / "cache"
+EMBED_CACHE_FILE = CACHE_DIR / "embedding_cache.json"
 
 # ---------- Ollama ----------
 OLLAMA_CHAT_URL = "http://localhost:11434/api/chat"

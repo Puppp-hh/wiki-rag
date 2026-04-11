@@ -9,10 +9,10 @@ from __future__ import annotations
 import json
 from typing import List, Tuple
 
-from embedding import EmbeddingError, embed
-from llm import LLMError, ask
-from refine import refine_answer
-from utils import INDEX_FILE, cosine_sim, log
+from core.embedding import EmbeddingError, embed
+from core.llm import LLMError, ask
+from core.utils import INDEX_FILE, cosine_sim, log
+from pipeline.refine import refine_answer
 
 _PROMPT = """基于以下内容回答问题：
 

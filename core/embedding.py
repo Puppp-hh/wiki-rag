@@ -7,7 +7,8 @@ from typing import Dict, List, Optional
 
 import requests
 
-from utils import (
+from core.utils import (
+    CACHE_DIR,
     EMBED_CACHE_FILE,
     EMBED_MODEL,
     OLLAMA_EMBED_URL,
@@ -44,6 +45,7 @@ def save_cache() -> None:
     if _cache is None:
         return
     try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
         with EMBED_CACHE_FILE.open("w", encoding="utf-8") as f:
             json.dump(_cache, f)
     except OSError as e:
@@ -61,7 +63,7 @@ def _cache_key(text: str, model: str) -> str:
 def embed(text: str, model: str = EMBED_MODEL) -> List[float]:
     """计算单条文本的 embedding，命中缓存则跳过网络调用。
 
-    要更换 embedding 模型：改 utils.EMBED_MODEL，或在调用处传 model 参数。
+    要更换 embedding 模型：改 core.utils.EMBED_MODEL，或在调用处传 model 参数。
     换到 OpenAI / 其它服务：重写本函数体即可，调用方无感。
     """
     cache = _load_cache()

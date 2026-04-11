@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import List
 
-from embedding import EmbeddingError, embed, save_cache
-from utils import INDEX_FILE, WIKI_DIR, log
+from core.embedding import EmbeddingError, embed, save_cache
+from core.utils import INDEX_FILE, WIKI_DIR, log
 
 
 def _split_paragraphs(text: str) -> List[str]:
@@ -49,6 +48,7 @@ def build_index() -> None:
             })
 
     try:
+        INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
         INDEX_FILE.write_text(
             json.dumps(chunks, ensure_ascii=False), encoding="utf-8"
         )

@@ -7,8 +7,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from llm import LLMError, ask
-from utils import RAW_DIR, WIKI_DIR, log
+from core.llm import LLMError, ask
+from core.utils import RAW_DIR, WIKI_DIR, log
 
 _PROMPT = """你是一个知识整理专家，请整理以下内容：
 

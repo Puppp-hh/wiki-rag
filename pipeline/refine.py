@@ -1,8 +1,8 @@
 """答案优化层：让 LLM 重写初始回答，去噪音、补结构、修错误。"""
 from __future__ import annotations
 
-from llm import LLMError, ask
-from utils import log
+from core.llm import LLMError, ask
+from core.utils import log
 
 _REFINE_PROMPT = """你是一个专业的技术知识整理专家。
 

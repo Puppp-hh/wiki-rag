@@ -1,5 +1,7 @@
 """wiki-rag 命令行入口。
 
+仅负责参数解析 + 调度 pipeline 层，不写任何业务逻辑。
+
 用法:
     python main.py ocr                  # raw/ 中的图片 → 同名 .md
     python main.py compile              # raw/ → wiki/
@@ -13,11 +15,11 @@ import argparse
 import logging
 import sys
 
-from compiler import compile_all
-from index import build_index
-from ocr import ocr_all
-from query import answer_question, query
-from utils import log
+from core.utils import log
+from pipeline.compiler import compile_all
+from pipeline.index import build_index
+from pipeline.ocr import ocr_all
+from pipeline.query import answer_question, query
 
 
 def _build_parser() -> argparse.ArgumentParser:

@@ -1,251 +1,343 @@
 # 🧠 Wiki-RAG
 
-> **Turn your Markdown notes into a private, offline knowledge base you can actually talk to.**
+> **把你散落的 Markdown 笔记，变成一个 100% 离线、可以用自然语言对话的私人知识库。**
+>
+> Turn your scattered Markdown notes into a fully offline, conversational personal knowledge base.
 
-A local-first Retrieval-Augmented Generation pipeline for personal Markdown wikis. Embedding, retrieval, and generation all run on your machine — no cloud APIs, no vector database, no telemetry.
-
-**中文简介**：本地优先的 RAG 系统。用 Ollama + Markdown + 纯 JSON 索引，把零散的笔记（甚至截图）变成一个能用自然语言提问的私人知识库。全程离线，无 API 费用。
-
-![Python](https://img.shields.io/badge/python-3.9%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Offline](https://img.shields.io/badge/runs-100%25%20offline-brightgreen)
-![Ollama](https://img.shields.io/badge/powered%20by-Ollama-black)
-
----
-
-## ✨ Features
-
-- **100% offline** — powered by [Ollama](https://ollama.com) running `deepseek-r1:1.5b` for generation and `nomic-embed-text` for semantic search
-- **Markdown-native** — notes stay as plain `.md` files; version-controllable, diffable, future-proof
-- **Two-stage ingestion** — raw drafts are auto-compiled by an LLM into structured wiki entries *before* indexing, so retrieval operates on clean text
-- **OCR pipeline** — drop screenshots (`.png/.jpg`) into `data/raw/` and `pytesseract` turns them into searchable notes (中英双语 `chi_sim+eng`)
-- **Answer refinement** — a second LLM pass rewrites noisy outputs into `definition → principle → example → summary` structure
-- **Three interfaces** — one-shot CLI, interactive `chat` REPL, and a Streamlit web UI
-- **No vector DB required** — a single `data/index.json` + vectorized `numpy` cosine scan handles thousands of chunks in milliseconds
-- **Embedding cache** — `sha256(model + text)` keyed, per-model, automatically invalidated when you swap models
-- **Layered architecture** — swapping Ollama for OpenAI/Claude is a single-file change
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
+[![Node](https://img.shields.io/badge/node-18%2B-green)](https://nodejs.org/)
+[![Ollama](https://img.shields.io/badge/powered%20by-Ollama-black)](https://ollama.com)
+[![Offline](https://img.shields.io/badge/runs-100%25%20offline-blue)](#)
+[![License](https://img.shields.io/badge/license-MIT-blue)](#)
 
 ---
 
-## 🏛 Architecture
+## 📌 Project Overview
 
-```
-  data/raw/*.png,.jpg ──► OCR (pytesseract) ──┐
-                                               ▼
-  data/raw/*.md ──► compile (LLM) ──► data/wiki/*.md
-                                               │
-                                               ▼
-                                    chunk + embed (Ollama)
-                                               │
-                                               ▼
-                                     data/index.json
-                                               │
-  user question ──► embed ──► cosine top-k ──► RAG prompt ──► LLM ──► refine ──► answer
-```
+**Wiki-RAG** 是一个**完全本地运行**的 Retrieval-Augmented Generation (RAG) 系统。
 
-The codebase is strictly layered — lower layers never import upper layers:
+它把你的 Markdown 笔记(甚至截图)做成一个可以「**像问 ChatGPT 一样**」提问的知识库,但全程不联网、不调云端 API、不上传任何数据。
 
-| Layer | Responsibility | Depends on |
-|---|---|---|
-| `core/` | Capability primitives: LLM call, embedding, config, cosine similarity | External libs only |
-| `pipeline/` | Business workflows: OCR, compile, index, query, refine | `core/` |
-| `main.py` / `web/` | Entry points: CLI dispatcher and Streamlit UI | `pipeline/` |
+* **LLM** = Ollama 跑的 `deepseek-r1:1.5b`
+* **Embedding** = `nomic-embed-text` (768 维)
+* **检索** = `numpy` + cosine similarity
+* **存储** = 一个 JSON 文件 (`data/index.json`)
+* **前端** = Apple 风格的 React + TypeScript UI
 
-Want to plug in OpenAI or Claude? Rewrite `core/llm.py::chat()` — nothing else changes.
+> 📖 想从零学懂 RAG?直接读 [`docs.md`](./docs.md)——一份「零基础到精通」的手把手教学手册。
 
 ---
 
-## 📁 Project Structure
+## 🚀 Features
+
+| 特性 | 说明 |
+|------|------|
+| 🔒 **100% Local** | 所有 LLM、embedding、索引、检索全部在本机跑,无云 API |
+| 💸 **No API Cost** | 没有 OpenAI / Anthropic 账单,自己的硬件就是上限 |
+| 📝 **Markdown Native** | 笔记永远是 plain `.md`,可被 git diff、grep、编辑器直接用 |
+| 🧱 **Two-Stage Ingestion** | `raw → wiki`:LLM 先把草稿整理成结构化笔记,再 embed |
+| 🖼 **OCR 支持** | 截图丢进 `data/raw/`,自动 OCR 成 Markdown |
+| ♻️ **Embedding 缓存** | `sha256(model + text)` 缓存,换模型自动失效 |
+| 🎯 **可扩展架构** | 换 LLM / embedding / 存储后端只改一个文件 |
+| 🎨 **Apple 风格 UI** | React + TS 前端,Light/Dark 双主题,严格遵守 DESIGN.md |
+
+---
+
+## 🛠 Tech Stack
+
+| 层 | 选型 | 中文 |
+|------|------|------|
+| LLM Runtime | [Ollama](https://ollama.com) | 本地大模型托管 |
+| LLM Model | `deepseek-r1:1.5b` | 1.5B 参数推理模型 |
+| Embedding Model | `nomic-embed-text` | 768 维语义向量模型 |
+| Backend | Python 3.9+ · `requests` · `numpy` | 极简后端 |
+| API | FastAPI · Uvicorn | HTTP 接口层 |
+| Frontend | React 18 · TypeScript · Vite | 前端工程 |
+| Styling | CSS Variables (无 Tailwind) | Apple 风设计系统 |
+| Storage | JSON (`index.json`) + sha256 cache | 无外部数据库 |
+| OCR (可选) | `pytesseract` + Pillow | 图片转文本 |
+
+---
+
+## 📂 Project Structure
 
 ```
 wiki-rag/
-├── main.py                     # CLI entry (argparse dispatcher)
-├── core/                       # Capability layer
-│   ├── utils.py                # paths, logging, cosine similarity
-│   ├── llm.py                  # Ollama chat wrapper + LLMError
-│   └── embedding.py            # Ollama embedding + disk cache
-├── pipeline/                   # Workflow layer
-│   ├── ocr.py                  # image → markdown (pytesseract)
-│   ├── compiler.py             # raw/ → wiki/ via LLM
-│   ├── index.py                # wiki/ → data/index.json
-│   ├── query.py                # retrieve + generate + refine
-│   └── refine.py               # second-pass answer cleanup
+├── main.py                       # CLI 入口(argparse 分发)
+├── core/                         # 能力层(不依赖业务)
+│   ├── utils.py                  # 路径常量 / 日志 / cosine_sim
+│   ├── llm.py                    # Ollama chat 封装 + LLMError
+│   └── embedding.py              # Ollama embedding + 磁盘缓存
+├── pipeline/                     # 业务层
+│   ├── ocr.py                    # 图片 → Markdown
+│   ├── compiler.py               # raw/ → wiki/(LLM 整理)
+│   ├── index.py                  # wiki/ → index.json
+│   ├── query.py                  # 检索 + 生成
+│   └── refine.py                 # 二次重写,清理小模型噪音
 ├── web/
-│   └── app.py                  # Streamlit UI
+│   ├── app.py                    # Streamlit UI(可选)
+│   └── api.py                    # FastAPI 接口(给 React 前端用)
+├── web-frontend/                 # React + TS 前端
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── theme.css             # Apple 风 CSS Variables
+│   │   ├── hooks/useTheme.ts     # Light/Dark 主题 Hook
+│   │   ├── components/GlassNav.tsx
+│   │   ├── pages/
+│   │   │   ├── Chat.tsx
+│   │   │   ├── Library.tsx
+│   │   │   ├── Debug.tsx
+│   │   │   └── Settings.tsx
+│   │   └── styles/*.css
+│   ├── index.html
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+├── design/
+│   └── DESIGN.md                 # Apple 风设计系统(UI 唯一真相源)
 ├── data/
-│   ├── raw/                    # original notes + screenshots
-│   ├── wiki/                   # LLM-compiled structured notes
-│   └── index.json              # embedding index
+│   ├── raw/                      # 原始笔记 + 截图
+│   ├── wiki/                     # LLM 整理后的结构化笔记
+│   └── index.json                # embedding 索引
 ├── cache/
-│   └── embedding_cache.json    # sha256-keyed embedding cache
-├── docs.md                     # learning guide
+│   └── embedding_cache.json      # sha256-keyed 缓存
+├── docs.md                       # 📖 零基础教学手册(必读)
 └── README.md
 ```
 
 ---
 
-## ⚙️ How It Works
+## ⚡ Quick Start
 
-The RAG pipeline has four stages, each independently runnable:
+### 0. 环境要求 (Prerequisites)
 
-1. **OCR** *(optional)* — `pipeline.ocr` scans `data/raw/` for `.png/.jpg/.jpeg`, runs `pytesseract` with `chi_sim+eng`, strips symbol noise, and writes a sibling `.md`.
-2. **Compile** — `pipeline.compiler` sends each raw note to the LLM with a strict rewrite prompt (hierarchical headings, bolded keywords, trailing summary). Output lands in `data/wiki/`.
-3. **Index** — `pipeline.index` splits each wiki file on blank lines, embeds every chunk via `nomic-embed-text`, and serializes `{source, text, embedding}` records into `data/index.json`. Embeddings are cached on disk, so re-indexing unchanged notes is near-instant.
-4. **Query** — `pipeline.query` embeds the question, computes cosine similarity against every chunk in the embedding space, picks top-k, stuffs them into a RAG prompt, and asks the LLM. A second `refine` pass rewrites the output into a clean structured answer.
+* **Python 3.9+**
+* **Node.js 18+**(只要前端时需要)
+* **[Ollama](https://ollama.com)**(必须)
+* *(可选)* **Tesseract** 用于 OCR
+  * macOS: `brew install tesseract tesseract-lang`
+  * Ubuntu: `sudo apt install tesseract-ocr tesseract-ocr-chi-sim`
 
----
-
-## 🚀 Setup
-
-### Prerequisites
-
-- **Python 3.9+**
-- **[Ollama](https://ollama.com)** running locally (`ollama serve`)
-- *(Optional, for OCR)* **Tesseract**:
-  - macOS: `brew install tesseract tesseract-lang`
-  - Ubuntu: `sudo apt install tesseract-ocr tesseract-ocr-chi-sim`
-
-### Install
+### 1. 克隆项目
 
 ```bash
-git clone https://github.com/<you>/wiki-rag.git
+git clone https://github.com/<your-name>/wiki-rag.git
 cd wiki-rag
-
-pip install -r requirements.txt
-
-# Pull the local models
-ollama pull deepseek-r1:1.5b
-ollama pull nomic-embed-text
 ```
 
-Minimal `requirements.txt`:
+### 2. 装 Python 依赖
+
+```bash
+pip install -r requirements.txt
+# 如果跑前端 API,再装:
+pip install fastapi uvicorn
+```
+
+`requirements.txt` 最小集:
 
 ```
 requests
 numpy
-pytesseract   # optional — OCR
-Pillow        # optional — OCR
-streamlit     # optional — Web UI
+pytesseract   # 可选 — OCR
+Pillow        # 可选 — OCR
+streamlit     # 可选 — Streamlit UI
+```
+
+### 3. 启动 Ollama 并拉模型
+
+```bash
+ollama serve &
+ollama pull deepseek-r1:1.5b
+ollama pull nomic-embed-text
+```
+
+### 4. 把笔记放进 `data/raw/`
+
+```bash
+cp ~/notes/*.md data/raw/
+# 也可以丢截图
+cp ~/screenshots/*.png data/raw/
+```
+
+### 5. 跑完整流水线
+
+```bash
+python main.py ocr       # 截图 → Markdown(可选)
+python main.py compile   # raw/ → wiki/
+python main.py index     # wiki/ → index.json
+python main.py query "Python 装饰器是什么?"
+```
+
+### 6. (可选)启动前端 + API
+
+```bash
+# Terminal 1 — FastAPI 后端
+uvicorn web.api:app --reload --port 8000
+
+# Terminal 2 — React 前端
+cd web-frontend
+npm install
+npm run dev    # http://localhost:5173
 ```
 
 ---
 
-## 💻 Usage
+## 💡 Usage
 
-All commands run from the project root.
-
-### CLI
+### CLI 一句话问答
 
 ```bash
-# 1. (Optional) OCR screenshots dropped into data/raw/
-python main.py ocr
+python main.py query "什么是 Python 装饰器?"
+```
 
-# 2. Compile raw notes into structured wiki markdown
-python main.py compile
+### 多轮 Chat REPL
 
-# 3. Build the embedding index
-python main.py index
-
-# 4. Ask a one-shot question
-python main.py query "What is a Python decorator?"
-
-# 4b. Tune retrieval depth / skip the refinement pass
-python main.py query "What is a Python decorator?" --top-k 5 --no-refine
-
-# 5. Interactive chat REPL (ChatGPT-style)
+```bash
 python main.py chat
 ```
 
-### Web UI
+### 调整检索深度 / 关闭二次重写
 
 ```bash
-streamlit run web/app.py
+python main.py query "解释 useEffect" --top-k 5 --no-refine
 ```
 
-Opens at `http://localhost:8501` — sidebar controls for top-k and the refine toggle.
+### Streamlit UI(简易)
+
+```bash
+streamlit run web/app.py     # http://localhost:8501
+```
+
+### React 前端(完整)
+
+进入 `http://localhost:5173`,会看到四个页面:
+
+| 页面 | 功能 |
+|------|------|
+| **Chat** | 主问答(多轮记忆 + 折叠的检索结果 + 相似度横向条) |
+| **Library** | raw / wiki 文件管理 + 一键 Rebuild Index |
+| **Debug** | embedding 维度、Top-K、cosine 分数可视化 |
+| **Settings** | Light / Dark 主题切换 + 模型信息 |
 
 ---
 
 ## 📖 Example
 
 ```bash
-$ python main.py query "What is a Python decorator?"
-```
+$ python main.py query "Python 装饰器是什么?"
 
-**Output:**
+[INFO] 计算问题 embedding...
+[INFO]   hit 0.8412 | [python.md] 装饰器是一种在不修改原函数的情况下...
+[INFO]   hit 0.7891 | [python.md] @decorator 语法等价于 func = decorator(func) ...
+[INFO]   hit 0.6320 | [python.md] 常见装饰器:@staticmethod / @classmethod ...
+[INFO] 生成初始回答...
+[INFO] 二次优化回答 (refine)...
 
-### Definition
-A decorator is a callable that takes a function (or class) and returns a new one with additional behavior, without modifying the original source.
+--- 回答 ---
+### 定义
+装饰器(decorator)是一个**接收函数并返回新函数**的可调用对象,用于在不修改原函数源码的情况下扩展行为。
 
-### Principle
-The `@decorator` syntax is syntactic sugar for `func = decorator(func)`. It lets you wrap cross-cutting concerns — logging, caching, permission checks, retries — around existing functions in a reusable, composable way.
+### 原理
+`@decorator` 是 `func = decorator(func)` 的语法糖。常见用途包括日志、缓存、权限校验、重试等横切关注点。
 
-### Example
-
+### 示例
 ```python
 from functools import wraps
-
 def log_calls(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         print(f"calling {func.__name__}")
         return func(*args, **kwargs)
     return wrapper
-
-@log_calls
-def greet(name):
-    return f"hello, {name}"
 ```
 
-### Summary
-Decorators transform functions at definition time — a clean, idiomatic way to add cross-cutting behavior in Python.
+### 总结
+装饰器是 Python 里给函数「包一层」的标准手法,干净、可组合、定义即生效。
+```
 
 ---
 
-## 🧭 Design Philosophy
+## 🌐 API Reference
 
-### Why not use a vector database?
+后端在 `web/api.py`,启动后默认 `http://localhost:8000`:
 
-Vector databases (FAISS, Chroma, Milvus, Qdrant) are purpose-built for million-scale retrieval with low-latency ANN indexes. They are **the right tool** when:
+| Method | Path | 说明 |
+|--------|------|------|
+| `POST` | `/api/query` | 完整 RAG 问答(检索 + 生成 + refine),返回 `{answer, hits}` |
+| `POST` | `/api/debug` | 只做检索 + 暴露 embedding 元信息 |
+| `GET`  | `/api/library` | 列出 raw/ 文件 + 是否已索引 + 段数 |
+| `POST` | `/api/library/rebuild` | 重新构建索引 |
 
-- Your corpus exceeds ~100K chunks
-- You need sub-100ms retrieval at high QPS
-- You need filtering, hybrid search, or incremental updates at scale
+请求示例:
 
-Personal knowledge bases rarely hit any of those thresholds. A few thousand paragraphs fit comfortably in memory, and a vectorized cosine scan over a `numpy.ndarray` finishes in **single-digit milliseconds**. Adding a vector DB buys you:
+```bash
+curl -X POST http://localhost:8000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Python 装饰器是什么?", "top_k": 3, "refine": true}'
+```
 
-- Another daemon to keep running
-- Another schema to migrate
-- Another failure mode to debug
-- A new abstraction wall between you and your own data
+---
 
-…in exchange for performance you don't need. `index.json` is greppable, diffable, portable, and human-inspectable. When the corpus eventually outgrows linear search, swapping in FAISS is a ~20-line change isolated to `pipeline/index.py` and `pipeline/query.py`.
+## 📸 Screenshots
 
-> **Principle: use the simplest thing that works. Graduate only when the data forces you to.**
+> 截图会在前端首发后补上。所有页面严格遵守 [`design/DESIGN.md`](./design/DESIGN.md) 的 Apple 风格。
 
-### Why the two-stage `raw → wiki` ingestion?
-
-Writing notes and *structuring* notes are different cognitive tasks. `raw/` lets you dump ideas without format overhead; the LLM compiler turns that dump into clean, retrieval-friendly markdown. Clean separation between **authoring** and **organizing**.
-
-### Why a second `refine` pass on the answer?
-
-Small local models (sub-3B params) produce noisy, off-topic, occasionally hallucinated output even with good retrieval. A second LLM pass with a strict rewrite prompt — *stay on topic, remove fabrications, produce definition/principle/example/summary structure* — dramatically improves output quality at the cost of one extra call. Disable it with `--no-refine` when latency matters.
+| 页面 | 占位 |
+|------|------|
+| Chat (Light) | `docs/images/chat-light.png` *(coming soon)* |
+| Chat (Dark)  | `docs/images/chat-dark.png` *(coming soon)* |
+| Library      | `docs/images/library.png` *(coming soon)* |
+| Debug        | `docs/images/debug.png` *(coming soon)* |
+| Settings     | `docs/images/settings.png` *(coming soon)* |
 
 ---
 
 ## 🗺 Roadmap
 
-- [ ] Pluggable LLM backends (OpenAI / Claude / `llama.cpp`)
-- [ ] Pluggable embedding backends (sentence-transformers, BGE, Voyage)
-- [ ] Hybrid retrieval (BM25 + dense)
-- [ ] Incremental indexing (only re-embed changed files)
-- [ ] Citation rendering in answers (`[source: wiki/python.md]`)
-- [ ] Conversational memory in `chat` mode
-- [ ] FAISS backend auto-enabled above 10K chunks
-- [ ] Dockerfile with Ollama bundled
+* [ ] 增量索引(只 re-embed 改动文件)
+* [ ] Hybrid 检索(BM25 + dense)
+* [ ] 引用回显(答案末尾贴 `[source: wiki/python.md]`)
+* [ ] FAISS 后端(>10K chunks 时自动启用)
+* [ ] 可插拔 LLM 后端(OpenAI / Claude / llama.cpp)
+* [ ] 可插拔数据源(Obsidian / Notion / GitHub Issues)
+* [ ] 流式输出(SSE)前端打字机效果
+* [ ] 多用户会话存储(`data/sessions/`)
+* [ ] Dockerfile(Ollama bundled)
+
+---
+
+## 🙋 FAQ
+
+**Q: 为什么不用向量数据库?**
+A: chunk 数 < 1 万 时,`numpy` 线性扫描比任何 vector DB 都快,而且 `index.json` 可被 `git diff`、`grep`、人眼直接看。等真的扛不住再换 FAISS。
+
+**Q: 能换 LLM 吗?**
+A: 改 `core/utils.py::LLM_MODEL`,或重写 `core/llm.py::chat()` 接 OpenAI/Claude——业务层无感。
+
+**Q: 为什么有 `raw/` 和 `wiki/` 两层?**
+A: 「写笔记」和「整理笔记」是两件事。`raw/` 让你想到啥写啥,LLM compiler 自动整理成结构化 wiki,降低写笔记心智负担。
+
+更多问题请见 [`docs.md` § 8 FAQ](./docs.md#8-faq你一定会遇到的问题)。
 
 ---
 
 ## 📄 License
 
 [MIT](./LICENSE) © 2026
+
+---
+
+## 🎓 想从零学懂 RAG?
+
+直接打开 [`docs.md`](./docs.md)——一份**零基础到精通**的中文教学手册:
+
+1. 什么是 RAG(开卷考试类比)
+2. 为什么 RAG 比裸 LLM 强
+3. 完整工作流程(讲故事 + 文字流程图)
+4. 三个核心概念:Embedding / Cosine Similarity / 语义搜索
+5. 五步手把手实现一个最小 RAG
+6. 本项目代码逐文件解析
+7. 实际运行示例
+8. FAQ
+9. 进阶优化(chunk / top-k / 缓存 / prompt)
+10. 扩展方向(Web UI / OCR / Obsidian / Agent 记忆)

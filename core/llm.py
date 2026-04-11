@@ -5,7 +5,7 @@ from typing import Dict, List
 
 import requests
 
-from utils import LLM_MODEL, OLLAMA_CHAT_URL, REQUEST_TIMEOUT, log
+from core.utils import LLM_MODEL, OLLAMA_CHAT_URL, REQUEST_TIMEOUT, log
 
 
 class LLMError(Exception):

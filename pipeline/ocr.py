@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from utils import RAW_DIR, log
+from core.utils import RAW_DIR, log
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg"}
 DEFAULT_LANG = "chi_sim+eng"

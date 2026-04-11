@@ -1,0 +1,141 @@
+.debug__header {
+  margin-bottom: 16px;
+}
+
+.debug__bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  align-items: center;
+}
+
+.debug__input {
+  flex: 1;
+}
+
+.debug__select {
+  background: var(--color-input-bg);
+  border: 3px solid var(--color-input-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  font-size: 14px;
+  letter-spacing: var(--tracking-small);
+  color: var(--color-text);
+}
+
+.debug__error {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.debug__section {
+  margin: 32px 0 16px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-display);
+  color: var(--color-text);
+}
+
+.debug__kv {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 14px 24px;
+  font-size: 14px;
+  letter-spacing: var(--tracking-small);
+  background: var(--color-surface);
+  border-radius: var(--radius-2xl);
+  padding: 22px 26px;
+  box-shadow: var(--shadow-card-soft);
+}
+[data-theme="dark"] .debug__kv { box-shadow: none; }
+
+.debug__kv > span {
+  color: var(--color-text-muted);
+}
+
+.debug__kv > b,
+.debug__kv > code {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.debug__num {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent) !important;
+  font-weight: 600;
+}
+
+.debug__vec {
+  font-family: var(--font-mono);
+  font-weight: 400 !important;
+  word-break: break-all;
+  color: var(--color-text-soft) !important;
+}
+
+.debug__hits {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.debug__hit {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-card-soft);
+}
+[data-theme="dark"] .debug__hit { box-shadow: none; }
+
+.debug__hit-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  letter-spacing: var(--tracking-micro);
+  color: var(--color-text-muted);
+}
+
+.debug__rank {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.debug__cosine {
+  color: var(--color-accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.debug__src {
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+
+.debug__bar-bg {
+  margin-top: 10px;
+  height: 4px;
+  background: var(--color-divider);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.debug__bar-fill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 200ms ease;
+}
+
+.debug__text {
+  margin: 12px 0 0;
+  font-size: 14px;
+  letter-spacing: var(--tracking-small);
+  color: var(--color-text-soft);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

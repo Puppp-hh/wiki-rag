@@ -1,15 +1,22 @@
 """Streamlit 网页问答界面。
 
-启动:
-    streamlit run app.py
+启动（在项目根目录执行）：
+    streamlit run web/app.py
 """
 from __future__ import annotations
 
 import logging
+import sys
+from pathlib import Path
 
-import streamlit as st
+# 让 Streamlit 直接执行本文件时也能找到 core/ 和 pipeline/ 包
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-from query import answer_question
+import streamlit as st  # noqa: E402
+
+from pipeline.query import answer_question  # noqa: E402
 
 # Streamlit 自带控制台输出，关掉 INFO 噪音
 logging.getLogger("wiki-rag").setLevel(logging.WARNING)

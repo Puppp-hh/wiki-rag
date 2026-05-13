@@ -103,6 +103,10 @@ web-frontend/.vite/
 # TypeScript build info
 *.tsbuildinfo
 
+# Local browser verification artifacts
+.playwright-cli/
+output/playwright/
+
 # ----- Logs -----
 logs
 *.log
@@ -123,6 +127,8 @@ cache/
 
 # Build artifacts of the RAG pipeline
 data/index.json
+data/index_meta.json
+data/sessions/
 
 # Personal notes — keep example files only
 data/raw/*

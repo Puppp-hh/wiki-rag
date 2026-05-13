@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,8 @@ DATA_DIR = ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 WIKI_DIR = DATA_DIR / "wiki"
 INDEX_FILE = DATA_DIR / "index.json"
+INDEX_META_FILE = DATA_DIR / "index_meta.json"
+SESSIONS_DIR = DATA_DIR / "sessions"
 
 CACHE_DIR = ROOT / "cache"
 EMBED_CACHE_FILE = CACHE_DIR / "embedding_cache.json"
@@ -27,8 +30,18 @@ OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
 
 LLM_MODEL = "deepseek-r1:1.5b"
 EMBED_MODEL = "nomic-embed-text"
+LLM_BACKEND = os.getenv("WIKI_RAG_LLM_BACKEND", "ollama").strip().lower()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-5-haiku-latest")
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
+LLAMA_CPP_BASE_URL = os.getenv("LLAMA_CPP_BASE_URL", "http://localhost:8080")
 
 REQUEST_TIMEOUT = 120  # seconds
+FAISS_THRESHOLD = int(os.getenv("WIKI_RAG_FAISS_THRESHOLD", "10000"))
+HYBRID_DENSE_WEIGHT = float(os.getenv("WIKI_RAG_DENSE_WEIGHT", "0.7"))
 
 
 # ---------- 日志 ----------

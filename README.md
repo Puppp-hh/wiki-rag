@@ -38,6 +38,14 @@
 | 🧱 **Two-Stage Ingestion** | `raw → wiki`:LLM 先把草稿整理成结构化笔记,再 embed |
 | 🖼 **OCR 支持** | 截图丢进 `data/raw/`,自动 OCR 成 Markdown |
 | ♻️ **Embedding 缓存** | `sha256(model + text)` 缓存,换模型自动失效 |
+| ⚡ **增量索引** | 通过文件 hash 判断变化,只 re-embed 改动文件 |
+| 🔎 **Hybrid 检索** | BM25 + dense embedding 融合排序,兼顾关键词和语义 |
+| 📎 **引用回显** | 答案末尾自动附加 `[source: wiki/xxx.md]` |
+| 🧮 **FAISS 自动后端** | chunk 数超过阈值时优先尝试 FAISS,不可用则回退 numpy |
+| 🔌 **可插拔 LLM** | 支持 Ollama / OpenAI / Claude / llama.cpp 后端 |
+| 🗂 **可插拔数据源** | 支持 Obsidian、Notion 导出、GitHub Issues JSON 同步到 raw |
+| ⌁ **SSE 流式输出** | FastAPI SSE + React 打字机效果 |
+| 👥 **多用户会话** | 每个 session 保存到 `data/sessions/` |
 | 🎯 **可扩展架构** | 换 LLM / embedding / 存储后端只改一个文件 |
 | 🎨 **Apple 风格 UI** | React + TS 前端,Light/Dark 双主题,严格遵守 DESIGN.md |
 
@@ -66,13 +74,16 @@ wiki-rag/
 ├── main.py                       # CLI 入口(argparse 分发)
 ├── core/                         # 能力层(不依赖业务)
 │   ├── utils.py                  # 路径常量 / 日志 / cosine_sim
-│   ├── llm.py                    # Ollama chat 封装 + LLMError
+│   ├── llm.py                    # 可插拔 LLM 后端 + LLMError
+│   ├── sessions.py               # data/sessions/ 会话存储
 │   └── embedding.py              # Ollama embedding + 磁盘缓存
 ├── pipeline/                     # 业务层
 │   ├── ocr.py                    # 图片 → Markdown
 │   ├── compiler.py               # raw/ → wiki/(LLM 整理)
-│   ├── index.py                  # wiki/ → index.json
-│   ├── query.py                  # 检索 + 生成
+│   ├── index.py                  # wiki/ → index.json(增量索引)
+│   ├── retrieval.py              # BM25 + dense + FAISS fallback
+│   ├── query.py                  # 检索 + 生成 + 引用回显
+│   ├── sources.py                # Obsidian / Notion / GitHub Issues 同步
 │   └── refine.py                 # 二次重写,清理小模型噪音
 ├── web/
 │   ├── app.py                    # Streamlit UI(可选)
@@ -98,6 +109,8 @@ wiki-rag/
 ├── data/
 │   ├── raw/                      # 原始笔记 + 截图
 │   ├── wiki/                     # LLM 整理后的结构化笔记
+│   ├── sessions/                 # 多用户会话 JSON
+│   ├── index_meta.json           # 增量索引元数据
 │   └── index.json                # embedding 索引
 ├── cache/
 │   └── embedding_cache.json      # sha256-keyed 缓存
@@ -164,7 +177,7 @@ cp ~/screenshots/*.png data/raw/
 ```bash
 python main.py ocr       # 截图 → Markdown(可选)
 python main.py compile   # raw/ → wiki/
-python main.py index     # wiki/ → index.json
+python main.py index     # wiki/ → index.json(默认增量)
 python main.py query "Python 装饰器是什么?"
 ```
 
@@ -178,6 +191,87 @@ uvicorn web.api:app --reload --port 8000
 cd web-frontend
 npm install
 npm run dev    # http://localhost:5173
+```
+
+---
+
+## 🔧 Advanced Features
+
+### 增量索引
+
+`python main.py index` 默认启用增量索引。系统会把每个 `data/wiki/*.md` 的内容 hash 写入 `data/index_meta.json`。再次构建时,未变化的文件直接复用旧 chunks,只有改动文件才重新切分和 re-embed。
+
+如需强制全量重建:
+
+```bash
+python main.py index --full
+```
+
+### Hybrid 检索与 FAISS 自动后端
+
+查询默认使用 Hybrid 检索:
+
+```text
+final_score = dense_score * WIKI_RAG_DENSE_WEIGHT + bm25_score * (1 - WIKI_RAG_DENSE_WEIGHT)
+```
+
+默认 `WIKI_RAG_DENSE_WEIGHT=0.7`。当 chunks 数量超过 `WIKI_RAG_FAISS_THRESHOLD`(默认 10000) 时,系统会优先尝试使用 FAISS 做 dense 检索;如果本地没有安装 `faiss`,会自动回退到 numpy。
+
+### 可插拔 LLM 后端
+
+默认:
+
+```bash
+export WIKI_RAG_LLM_BACKEND=ollama
+```
+
+可选:
+
+```bash
+export WIKI_RAG_LLM_BACKEND=openai
+export OPENAI_API_KEY=...
+export OPENAI_MODEL=gpt-4o-mini
+
+export WIKI_RAG_LLM_BACKEND=claude
+export ANTHROPIC_API_KEY=...
+export ANTHROPIC_MODEL=claude-3-5-haiku-latest
+
+export WIKI_RAG_LLM_BACKEND=llama.cpp
+export LLAMA_CPP_BASE_URL=http://localhost:8080
+```
+
+### 可插拔数据源
+
+同步数据源到 `data/raw/`:
+
+```bash
+export WIKI_RAG_OBSIDIAN_VAULT=~/Documents/ObsidianVault
+export WIKI_RAG_NOTION_EXPORT=~/Downloads/notion-export
+export WIKI_RAG_GITHUB_ISSUES_JSON=~/Downloads/issues.json
+
+python main.py sources
+```
+
+也可以调用:
+
+```bash
+POST /api/sources/sync
+```
+
+当前 Notion 和 GitHub Issues 走本地导出文件,不强依赖外部 API;后续可以保持 provider 接口不变,继续接真实 API。
+
+### SSE 流式输出与会话
+
+前端 Chat 页面优先调用:
+
+```text
+POST /api/query/stream
+```
+
+后端以 SSE 事件返回 `session`、`hits`、`token`、`done`。前端逐 token 追加到 assistant 消息中,形成打字机效果。每个浏览器生成一个 `session_id`,后端会把会话保存到:
+
+```text
+data/sessions/<session_id>.json
 ```
 
 ---
@@ -264,9 +358,13 @@ def log_calls(func):
 | Method | Path | 说明 |
 |--------|------|------|
 | `POST` | `/api/query` | 完整 RAG 问答(检索 + 生成 + refine),返回 `{answer, hits}` |
+| `POST` | `/api/query/stream` | SSE 流式 RAG 问答,返回 session / hits / token / done 事件 |
 | `POST` | `/api/debug` | 只做检索 + 暴露 embedding 元信息 |
 | `GET`  | `/api/library` | 列出 raw/ 文件 + 是否已索引 + 段数 |
 | `POST` | `/api/library/rebuild` | 重新构建索引 |
+| `POST` | `/api/sources/sync` | 同步 Obsidian / Notion / GitHub Issues 数据源 |
+| `GET`  | `/api/sessions/{session_id}` | 读取会话 JSON |
+| `DELETE` | `/api/sessions/{session_id}` | 清空会话 JSON |
 
 请求示例:
 
@@ -294,14 +392,14 @@ curl -X POST http://localhost:8000/api/query \
 
 ## 🗺 Roadmap
 
-* [ ] 增量索引(只 re-embed 改动文件)
-* [ ] Hybrid 检索(BM25 + dense)
-* [ ] 引用回显(答案末尾贴 `[source: wiki/python.md]`)
-* [ ] FAISS 后端(>10K chunks 时自动启用)
-* [ ] 可插拔 LLM 后端(OpenAI / Claude / llama.cpp)
-* [ ] 可插拔数据源(Obsidian / Notion / GitHub Issues)
-* [ ] 流式输出(SSE)前端打字机效果
-* [ ] 多用户会话存储(`data/sessions/`)
+* [x] 增量索引(只 re-embed 改动文件)
+* [x] Hybrid 检索(BM25 + dense)
+* [x] 引用回显(答案末尾贴 `[source: wiki/python.md]`)
+* [x] FAISS 后端(>10K chunks 时自动启用)
+* [x] 可插拔 LLM 后端(OpenAI / Claude / llama.cpp)
+* [x] 可插拔数据源(Obsidian / Notion / GitHub Issues)
+* [x] 流式输出(SSE)前端打字机效果
+* [x] 多用户会话存储(`data/sessions/`)
 * [ ] Dockerfile(Ollama bundled)
 
 ---
@@ -309,10 +407,10 @@ curl -X POST http://localhost:8000/api/query \
 ## 🙋 FAQ
 
 **Q: 为什么不用向量数据库?**
-A: chunk 数 < 1 万 时,`numpy` 线性扫描比任何 vector DB 都快,而且 `index.json` 可被 `git diff`、`grep`、人眼直接看。等真的扛不住再换 FAISS。
+A: chunk 数 < 1 万 时,`numpy` 线性扫描简单直接,而且 `index.json` 可被 `git diff`、`grep`、人眼直接看。超过 `WIKI_RAG_FAISS_THRESHOLD` 后会自动尝试 FAISS,不可用时回退 numpy。
 
 **Q: 能换 LLM 吗?**
-A: 改 `core/utils.py::LLM_MODEL`,或重写 `core/llm.py::chat()` 接 OpenAI/Claude——业务层无感。
+A: 可以。通过 `WIKI_RAG_LLM_BACKEND` 切换 `ollama` / `openai` / `claude` / `llama.cpp`,业务层无感。
 
 **Q: 为什么有 `raw/` 和 `wiki/` 两层?**
 A: 「写笔记」和「整理笔记」是两件事。`raw/` 让你想到啥写啥,LLM compiler 自动整理成结构化 wiki,降低写笔记心智负担。

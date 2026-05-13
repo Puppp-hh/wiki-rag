@@ -3,83 +3,126 @@
   top: 0;
   z-index: 1000;
   width: 100%;
-  height: 48px;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  color: #ffffff;
+  height: 56px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--color-divider);
+  color: var(--color-text);
 }
 
 .glass-nav__inner {
   max-width: 1200px;
   height: 100%;
   margin: 0 auto;
-  padding: 0 22px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 18px;
 }
 
 .glass-nav__brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-family: var(--font-text);
+  min-width: 150px;
 }
 
 .glass-nav__logo {
-  font-size: 16px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-bg);
 }
 
 .glass-nav__brand-name {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: var(--tracking-small);
-  color: #ffffff;
+  color: var(--color-text);
 }
 
 .glass-nav__tabs {
   list-style: none;
   display: flex;
-  gap: 28px;
+  gap: 4px;
   margin: 0;
-  padding: 0;
+  padding: 4px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
 }
 
 .glass-nav__link {
-  color: #ffffff;
+  color: var(--color-text-soft);
   font-family: var(--font-text);
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: var(--tracking-micro);
-  font-weight: 400;
-  opacity: 0.8;
-  transition: opacity 120ms ease;
+  font-weight: 500;
+  transition: background 120ms ease, color 120ms ease;
   text-decoration: none;
-  padding: 4px 0;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  display: block;
 }
-.glass-nav__link:hover,
+.glass-nav__link:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-surface) 65%, transparent);
+  text-decoration: none;
+}
 .glass-nav__link.is-active {
-  opacity: 1;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-inset);
   text-decoration: none;
 }
 
 .glass-nav__theme {
-  background: transparent;
-  color: #ffffff;
-  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 15px;
   border-radius: var(--radius-pill);
-  padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  transition: background 120ms ease;
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  transition: background 120ms ease, border-color 120ms ease;
 }
 .glass-nav__theme:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
 }
 
 @media (max-width: 640px) {
-  .glass-nav__tabs { gap: 18px; }
+  .glass-nav {
+    height: auto;
+  }
+  .glass-nav__inner {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .glass-nav__brand {
+    min-width: 0;
+  }
   .glass-nav__brand-name { display: none; }
+  .glass-nav__tabs {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    justify-content: space-between;
+  }
+  .glass-nav__link {
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
 }

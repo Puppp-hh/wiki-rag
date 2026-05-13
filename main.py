@@ -20,6 +20,7 @@ from pipeline.compiler import compile_all
 from pipeline.index import build_index
 from pipeline.ocr import ocr_all
 from pipeline.query import answer_question, query
+from pipeline.sources import sync_sources
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -31,7 +32,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("ocr", help="对 raw/ 中的图片做 OCR，生成同名 .md")
     sub.add_parser("compile", help="把 raw/ 的笔记整理到 wiki/")
-    sub.add_parser("index", help="对 wiki/ 构建 embedding 索引")
+    idx = sub.add_parser("index", help="对 wiki/ 构建 embedding 索引")
+    idx.add_argument(
+        "--full",
+        action="store_true",
+        help="关闭增量索引，强制扫描全部文件",
+    )
+    sub.add_parser("sources", help="同步可插拔数据源到 data/raw/")
 
     q = sub.add_parser("query", help="单次检索并回答问题")
     q.add_argument("question", help="要问的问题")
@@ -85,7 +92,9 @@ def main() -> int:
         elif args.cmd == "compile":
             compile_all()
         elif args.cmd == "index":
-            build_index()
+            build_index(incremental=not args.full)
+        elif args.cmd == "sources":
+            sync_sources()
         elif args.cmd == "query":
             query(args.question, top_k=args.top_k, refine=not args.no_refine)
         elif args.cmd == "chat":

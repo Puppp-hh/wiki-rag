@@ -1,12 +1,13 @@
 .settings__header {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .settings__section {
   background: var(--color-surface);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-2xl);
-  padding: 24px 28px;
-  margin-bottom: 24px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
   box-shadow: var(--shadow-card-soft);
 }
 [data-theme="dark"] .settings__section { box-shadow: none; }
@@ -57,6 +58,7 @@
   font-family: var(--font-mono);
   font-size: 14px;
   background: var(--color-input-bg);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
   padding: 6px 12px;
   color: var(--color-text-soft);
@@ -64,7 +66,8 @@
 
 .settings__seg {
   display: flex;
-  background: var(--color-input-bg);
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-pill);
   padding: 4px;
   gap: 4px;
@@ -83,10 +86,26 @@
 .settings__seg-btn.is-active {
   background: var(--color-accent);
   color: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 113, 227, 0.22);
 }
 
 .settings__about {
   font-size: 14px;
   letter-spacing: var(--tracking-small);
   color: var(--color-text-soft);
+}
+
+@media (max-width: 720px) {
+  .settings__row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .settings__seg,
+  .settings__code {
+    width: 100%;
+  }
+  .settings__seg-btn {
+    flex: 1;
+  }
 }

@@ -1,0 +1,17 @@
+[Unit]
+Description=Wiki-RAG FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/wiki-rag
+EnvironmentFile=-/opt/wiki-rag/.env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/wiki-rag/.venv/bin/python3 -m uvicorn web.api:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

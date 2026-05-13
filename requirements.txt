@@ -1,0 +1,11 @@
+requests
+numpy
+fastapi
+uvicorn
+pydantic
+
+# Optional document/OCR support
+pypdf
+pdfplumber
+pytesseract
+Pillow
